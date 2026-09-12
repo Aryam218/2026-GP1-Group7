@@ -138,4 +138,4 @@ CLAUDE.md
 docs/segmentation_finetuning.md
 docs/cost_estimation.md
 .claude/
-mobile_app/lib/screens/admin/admin_debug_entry_screen.dart
+mobile_app/lib/screens/admin/reviews/admin_debug_entry_screen.dart

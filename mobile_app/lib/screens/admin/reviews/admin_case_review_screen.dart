@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'admin_navigation.dart';
-import 'widgets/case_assessment_view.dart';
+import '../widgets/case_assessment_view.dart';
 
 /// Admin-facing review screen for one accident case. Read-only assessment
 /// content is delegated to [CaseAssessmentView] (shared with the Claim
