@@ -18,7 +18,7 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
   static const Color borderColor = Color(0xFFD7E0EC);
 
   // Backend base URL used to submit the admin-added damage.
-  static const String backendUrl = 'http://192.168.0.11:8000';
+  static const String backendUrl = 'http://192.168.0.239:8000';
 
   // Controls the current step:
   // 0 = image selection, 1 = damage details, 2 = review.
@@ -50,61 +50,62 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
   ];
 
   final List<DropdownOption> _parts = const [
-    DropdownOption(
-      value: 'front_bumper',
-      label: 'الصدام الأمامي',
-      englishLabel: 'Front Bumper',
-    ),
-    DropdownOption(
-      value: 'rear_bumper',
-      label: 'الصدام الخلفي',
-      englishLabel: 'Rear Bumper',
-    ),
-    DropdownOption(value: 'hood', label: 'غطاء المحرك', englishLabel: 'Hood'),
-    DropdownOption(
-      value: 'trunk',
-      label: 'الصندوق الخلفي',
-      englishLabel: 'Trunk',
-    ),
-    DropdownOption(
-      value: 'front_left_door',
-      label: 'الباب الأمامي الأيسر',
-      englishLabel: 'Front Left Door',
-    ),
-    DropdownOption(
-      value: 'front_right_door',
-      label: 'الباب الأمامي الأيمن',
-      englishLabel: 'Front Right Door',
-    ),
-    DropdownOption(
-      value: 'back_left_door',
-      label: 'الباب الخلفي الأيسر',
-      englishLabel: 'Back Left Door',
-    ),
-    DropdownOption(
-      value: 'back_right_door',
-      label: 'الباب الخلفي الأيمن',
-      englishLabel: 'Back Right Door',
-    ),
-    DropdownOption(
-      value: 'front_fender',
-      label: 'الرفرف الأمامي',
-      englishLabel: 'Front Fender',
-    ),
-    DropdownOption(
-      value: 'rear_fender',
-      label: 'الرفرف الخلفي',
-      englishLabel: 'Rear Fender',
-    ),
-    DropdownOption(value: 'roof', label: 'السقف', englishLabel: 'Roof'),
-    DropdownOption(
-      value: 'windshield',
-      label: 'الزجاج الأمامي',
-      englishLabel: 'Windshield',
-    ),
-    DropdownOption(value: 'lamp', label: 'المصباح', englishLabel: 'Lamp'),
-    DropdownOption(value: 'wheel', label: 'الإطار', englishLabel: 'Wheel'),
-  ];
+  DropdownOption(
+    value: 'front_bumper',
+    label: 'الصدام الأمامي',
+    englishLabel: 'Front Bumper',
+  ),
+  DropdownOption(
+    value: 'back_bumper',
+    label: 'الصدام الخلفي',
+    englishLabel: 'Back Bumper',
+  ),
+  DropdownOption(
+    value: 'door',
+    label: 'الباب',
+    englishLabel: 'Door',
+  ),
+  DropdownOption(
+    value: 'fender',
+    label: 'الرفرف',
+    englishLabel: 'Fender',
+  ),
+  DropdownOption(
+    value: 'hood',
+    label: 'غطاء المحرك',
+    englishLabel: 'Hood',
+  ),
+  DropdownOption(
+    value: 'trunk',
+    label: 'الصندوق الخلفي',
+    englishLabel: 'Trunk',
+  ),
+  DropdownOption(
+    value: 'roof',
+    label: 'السقف',
+    englishLabel: 'Roof',
+  ),
+  DropdownOption(
+    value: 'sill',
+    label: 'العتبة الجانبية',
+    englishLabel: 'Sill',
+  ),
+  DropdownOption(
+    value: 'windshield',
+    label: 'الزجاج',
+    englishLabel: 'Windshield',
+  ),
+  DropdownOption(
+    value: 'lamp',
+    label: 'المصباح',
+    englishLabel: 'Lamp',
+  ),
+  DropdownOption(
+    value: 'wheel',
+    label: 'الإطار',
+    englishLabel: 'Wheel',
+  ),
+];
 
   final List<DropdownOption> _severities = const [
     DropdownOption(value: 'minor', label: 'خفيف', englishLabel: 'Minor'),
@@ -212,7 +213,9 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
     try {
       // The selected image ID is sent so the backend knows
       // under which image the new costItem should be stored.
-      final uri = Uri.parse('$backendUrl/admin/cases/${widget.caseId}/damages');
+      final uri = Uri.parse(
+        '$backendUrl/damage/admin/cases/${widget.caseId}/damages',
+      );
 
       final response = await http.post(
         uri,
@@ -634,7 +637,7 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: () {
-        // Save the selected Firestore image document.
+        // Save the image selected by the admin.
         setState(() {
           _selectedImage = image;
         });
@@ -643,38 +646,44 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
         children: [
           Expanded(
             child: Stack(
+              alignment: Alignment.center,
               children: [
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(13),
-                    border: Border.all(
-                      color: selected ? const Color(0xFF2563EB) : borderColor,
-                      width: selected ? 3 : 1,
+                // Center allows the image container to take only the
+                // actual displayed image size instead of the full grid width.
+                Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(
+                        color: selected ? const Color(0xFF2563EB) : borderColor,
+                        width: selected ? 3 : 1,
+                      ),
                     ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(selected ? 10 : 12),
-                    child: Image.network(
-                      image.downloadUrl,
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const ColoredBox(
-                          color: Color(0xFFF2F4F8),
-                          child: Center(
-                            child: Icon(
-                              Icons.broken_image_outlined,
-                              color: Colors.grey,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(selected ? 10 : 12),
+                      child: Image.network(
+                        image.downloadUrl,
+
+                        // Keep the complete image visible without cropping.
+                        fit: BoxFit.contain,
+
+                        errorBuilder: (context, error, stackTrace) {
+                          return const ColoredBox(
+                            color: Color(0xFFF2F4F8),
+                            child: Center(
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                color: Colors.grey,
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
 
+                // Selection icon stays on the top-left side of the grid item.
                 if (selected)
                   Positioned(
                     top: 8,
@@ -696,7 +705,9 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
               ],
             ),
           ),
+
           const SizedBox(height: 8),
+
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -829,26 +840,52 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
         border: Border.all(color: borderColor),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(9),
-            child: Image.network(
-              _selectedImage!.downloadUrl,
-              width: 92,
-              height: 76,
-              fit: BoxFit.cover,
+          // Show a portrait preview so the complete image remains visible.
+          Container(
+            width: 85,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(9),
+              child: Image.network(
+                _selectedImage!.downloadUrl,
+                width: 85,
+                height: 120,
+
+                // Keep the full image visible without cropping.
+                fit: BoxFit.contain,
+
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.grey,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
+
           const SizedBox(width: 14),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
                   'الصورة المحددة',
                   style: TextStyle(fontSize: 12, color: Color(0xFF8997AA)),
                 ),
+
                 const SizedBox(height: 4),
+
                 Text(
                   'الصورة ${_imageNumber(_selectedImage!)}',
                   style: const TextStyle(
@@ -857,10 +894,12 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
                     color: Color(0xFF142A4A),
                   ),
                 ),
+
                 const SizedBox(height: 7),
+
                 InkWell(
                   onTap: () {
-                    // Return to step 1 without clearing the other selections.
+                    // Return to image selection without clearing damage details.
                     setState(() {
                       _currentStep = 0;
                     });
@@ -894,50 +933,97 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
       children: [
         Text(
           title,
+          textAlign: TextAlign.right,
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
             color: Color(0xFF142A4A),
           ),
         ),
+
         const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: value,
-          isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 15,
+
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: DropdownButtonFormField<String>(
+            value: value,
+            isExpanded: true,
+
+            icon: const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Color(0xFF68758A),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(
-                color: Color(0xFF2563EB),
-                width: 1.6,
+
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 15,
+              ),
+
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: borderColor),
+              ),
+
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(
+                  color: Color(0xFF2563EB),
+                  width: 1.6,
+                ),
               ),
             ),
-          ),
-          hint: Text(
-            hint,
-            style: const TextStyle(color: Color(0xFF99A5B5), fontSize: 14),
-          ),
-          items: options.map((option) {
-            return DropdownMenuItem<String>(
-              value: option.value,
+
+            hint: Align(
+              alignment: Alignment.centerRight,
               child: Text(
-                '${option.label} (${option.englishLabel})',
-                style: const TextStyle(fontSize: 14),
+                hint,
+                textAlign: TextAlign.right,
+                style: const TextStyle(color: Color(0xFF99A5B5), fontSize: 14),
               ),
-            );
-          }).toList(),
-          onChanged: onChanged,
+            ),
+
+            // Keep the selected value aligned to the right.
+            selectedItemBuilder: (context) {
+              return options.map((option) {
+                return Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    option.label,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF142A4A),
+                    ),
+                  ),
+                );
+              }).toList();
+            },
+
+            // Show Arabic labels only inside the dropdown menu.
+            items: options.map((option) {
+              return DropdownMenuItem<String>(
+                value: option.value,
+                alignment: Alignment.centerRight,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    option.label,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF142A4A),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+
+            onChanged: onChanged,
+          ),
         ),
       ],
     );

@@ -1,8 +1,36 @@
 from fastapi import APIRouter, BackgroundTasks
 from firebase_admin import firestore
 from services.damage_detection import process_damage_detection
-from services.cost_estimation_services import process_cost_estimation
+from pydantic import BaseModel
+from services.cost_estimation_services import (
+    process_cost_estimation,
+    add_admin_damage,
+)
 router = APIRouter()
+
+# Defines the data sent by the admin when manually adding a missing damage.
+# The request includes the selected image, damage type, vehicle part, and severity
+class AdminDamageRequest(BaseModel):
+    imageId: str
+    damageType: str
+    part: str
+    severity: str
+
+
+# Receives a manually added damage from the admin interface and sends it to the cost estimation service for validation, cost calculation, and storage in Firestore.
+@router.post("/admin/cases/{case_id}/damages")
+async def create_admin_damage(
+    case_id: str,
+    request: AdminDamageRequest,
+):
+    return await add_admin_damage(
+        case_id=case_id,
+        image_id=request.imageId,
+        damage_type=request.damageType,
+        part=request.part,
+        severity=request.severity,
+    )
+
 
 @router.post("/cost/{case_id}")
 async def cost(case_id: str):

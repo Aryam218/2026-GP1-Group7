@@ -54,6 +54,29 @@ BLOCKING_COST_STATES = {"running", "failed"}
 REFERRED_STATUS = "محالة لشيخ المعارض"
 LOCKED_STATUSES = REVIEWED_STATUSES | {REFERRED_STATUS}
 
+# Admin damage values
+ADMIN_DAMAGE_TYPES = {
+    "dent": "dent",
+    "scratch": "scratch",
+    "crack": "crack",
+    "glass": "glass",
+    "lamp": "lamp",
+    "tire_flat": "tire",
+}
+# Maps the detailed part selected to the logical pricing key used by labor_hours_lookup.py
+ADMIN_PART_LOOKUP = {
+    "front_bumper": "front_bumper",
+    "back_bumper": "back_bumper",
+    "door": "door",
+    "fender": "fender",
+    "hood": "hood",
+    "trunk": "trunk",
+    "roof": "roof",
+    "sill": "sill",
+    "windshield": "windshield",
+    "lamp": "lamp",
+    "wheel": "wheel",
+}
 
 class CostEstimationAbort(Exception):
     """Visible cost-run failure that must not invent an estimate."""
@@ -591,6 +614,179 @@ def _stage_image(img_doc, wheel_position_hint, f_veh, f_paint, bucket, review_re
         if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
+async def add_admin_damage(
+    case_id: str,
+    image_id: str,
+    damage_type: str,
+    part: str,
+    severity: str,
+):
+    """
+    Add a damage item manually during admin review.
+    Uses the same pricing factors and labor-hours lookup as the AI cost pipeline.
+    It does not rerun the AI models and does not approve the case.
+    """
+
+    _ensure_firebase_initialized()
+    db = firestore.client()
+
+    case_ref = db.collection("accidentCase").document(case_id)
+    case_doc = case_ref.get()
+
+    if not case_doc.exists:
+        return {
+            "status": "error",
+            "message": "Case not found",
+        }
+
+    case = case_doc.to_dict() or {}
+
+    current_status = str(case.get("status") or "").strip()
+
+    # Prevent editing after final review/report issuance.
+    if current_status in LOCKED_STATUSES or case.get("reportId"):
+        return {
+            "status": "error",
+            "message": "This case can no longer be modified",
+        }
+
+    image_ref = case_ref.collection("images").document(image_id)
+    image_doc = image_ref.get()
+
+    if not image_doc.exists:
+        return {
+            "status": "error",
+            "message": "Image not found",
+        }
+
+    damage_key = ADMIN_DAMAGE_TYPES.get(
+        str(damage_type or "").strip().lower()
+    )
+
+    selected_part = str(part or "").strip().lower()
+
+    lookup_key = ADMIN_PART_LOOKUP.get(selected_part)
+
+    severity_key = str(severity or "").strip().lower()
+
+    if damage_key is None:
+        return {
+            "status": "error",
+            "message": "Invalid damage type",
+        }
+
+    if lookup_key is None:
+        return {
+            "status": "error",
+            "message": "Invalid vehicle part",
+        }
+
+    if severity_key not in VALID_SEVERITIES:
+        return {
+            "status": "error",
+            "message": "Invalid severity",
+        }
+
+    najm = case.get("najimReport", {}) or {}
+    damage_location = najm.get("damageLocation", "")
+
+    wheel_position = _wheel_position_from_najm(damage_location)
+
+    hours = get_hours(
+        lookup_key,
+        damage_key,
+        wheel_position=wheel_position if lookup_key == "wheel" else None,
+    )
+
+    if hours is None:
+        return {
+            "status": "error",
+            "message": "No labor-hour value exists for this damage and part combination",
+        }
+
+    cost_factors = case.get("costFactors", {}) or {}
+
+    vehicle_factor = cost_factors.get("vehicle")
+    paint_factor = cost_factors.get("paint")
+
+    if vehicle_factor is None or paint_factor is None:
+        return {
+            "status": "error",
+            "message": "Case cost factors are not available",
+        }
+
+    severity_factor = float(get_severity_factor(severity_key))
+
+    line_cost = round(
+        float(hours)
+        * RATE_SAR
+        * severity_factor
+        * float(vehicle_factor)
+        * float(paint_factor),
+        2,
+    )
+
+    cost_item_ref = image_ref.collection("costItems").document()
+
+    item_data = {
+        "damageType": damage_key,
+
+        # Keep the exact part selected by the admin.
+        "part": selected_part,
+
+        # Use the normalized logical key for pricing.
+        "lookupKey": lookup_key,
+
+        "source": "admin",
+        "severity": severity_key,
+        "hours": float(hours),
+        "lineCostSar": line_cost,
+        "flags": [],
+        "adminAdded": True,
+        "severityFactorApplied": severity_factor,
+        "costRevision": case.get("costRevision"),
+        "createdAt": firestore.SERVER_TIMESTAMP,
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+    }
+
+    transaction = db.transaction()
+
+    @firestore.transactional
+    def _add_damage(txn):
+        txn.set(cost_item_ref, item_data)
+
+        txn.update(
+            image_ref,
+            {
+                "estimatedLaborCostSar": firestore.Increment(line_cost),
+                "adminReviewUpdatedAt": firestore.SERVER_TIMESTAMP,
+            },
+        )
+
+        txn.update(
+            case_ref,
+            {
+                "estimatedCostSar": firestore.Increment(line_cost),
+                "needsAdminReview": True,
+                "adminReviewUpdatedAt": firestore.SERVER_TIMESTAMP,
+            },
+        )
+
+    _add_damage(transaction)
+
+    return {
+        "status": "success",
+        "message": "Damage added successfully",
+        "damageId": cost_item_ref.id,
+        "damage": {
+            "damageType": damage_key,
+            "part": selected_part,
+            "lookupKey": lookup_key,
+            "severity": severity_key,
+            "hours": float(hours),
+            "lineCostSar": line_cost,
+        },
+    }
 
 async def process_cost_estimation(case_id: str) -> dict:
     cost_run_id = None
