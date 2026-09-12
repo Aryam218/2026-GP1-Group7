@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'add_damage_screen.dart';
+import '../edits/add_damage_screen.dart';
 
 /// Single call site for entering the assessment-editing workflow, used by
 /// both the Case Review screen's edit/pencil icon and the Claim Details

@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'admin_navigation.dart';
-import 'widgets/case_assessment_view.dart';
+import '../widgets/case_assessment_view.dart';
 
 /// Admin-facing claim (objection) review screen. Reuses the same
 /// [CaseAssessmentView] the Case Review screen uses for the underlying
