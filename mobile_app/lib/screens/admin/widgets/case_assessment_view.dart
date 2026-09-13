@@ -468,43 +468,49 @@ class CaseAssessmentView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Row(
-                      textDirection: TextDirection.rtl,
-                      children: [
-                        // Show edit button only when this screen allows editing.
-                        if (onEditImage != null && hasDamage)
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: IconButton(
-                              tooltip: 'تعديل أضرار الصورة',
-                              onPressed: () {
-                                onEditImage!(
-                                  imageId,
-                                  originalImageUrl.isNotEmpty
-                                      ? originalImageUrl
-                                      : url,
-                                  imageNumber,
-                                );
-                              },
-                              icon: const Icon(
-                                Icons.edit_outlined,
-                                color: Color(0xFF1E3A6E),
-                                size: 22,
-                              ),
-                            ),
-                          ),
+  textDirection: TextDirection.rtl,
+  children: [
+    Row(
+      mainAxisSize: MainAxisSize.min,
+      textDirection: TextDirection.rtl,
+      children: [
+        Text(
+          hasDamage ? 'ضرر مكتشف' : 'سليمة',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: hasDamage ? Colors.red : Colors.green,
+          ),
+        ),
+        const SizedBox(width: 8),
+        _severityChip(severity),
+      ],
+    ),
 
-                        Text(
-                          hasDamage ? 'ضرر مكتشف' : 'سليمة',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: hasDamage ? Colors.red : Colors.green,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        _severityChip(severity),
-                      ],
-                    ),
+    const Spacer(),
+
+    if (onEditImage != null && hasDamage)
+      IconButton(
+        tooltip: 'تعديل أضرار الصورة',
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        onPressed: () {
+          onEditImage!(
+            imageId,
+            originalImageUrl.isNotEmpty
+                ? originalImageUrl
+                : url,
+            imageNumber,
+          );
+        },
+        icon: const Icon(
+          Icons.edit_outlined,
+          color: Color(0xFF1E3A6E),
+          size: 22,
+        ),
+      ),
+  ],
+),
                     if (severityConfidence is num) ...[
                       const SizedBox(height: 4),
                       Text(

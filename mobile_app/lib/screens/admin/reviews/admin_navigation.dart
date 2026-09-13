@@ -11,11 +11,11 @@ import '../edits/add_damage_screen.dart';
 /// endpoint does not exist yet) and is used here completely as-is.
 class AdminNavigation {
   AdminNavigation._();
-
-  static Future<void> openAddDamage(BuildContext context, String caseId) {
-    return Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => AddDamageScreen(caseId: caseId)),
-    );
-  }
 }
+  
+  //static Future<void> openAddDamage(BuildContext context, String caseId) {
+   // return Navigator.push(
+    //  context,
+   //   MaterialPageRoute(builder: (_) => AddDamageScreen(caseId: caseId)),
+    ///);}
+

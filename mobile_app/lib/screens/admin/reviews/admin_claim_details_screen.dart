@@ -515,7 +515,7 @@ class _AdminClaimDetailsScreenState extends State<AdminClaimDetailsScreen> {
 
       if (!mounted) return;
       _showMessage('تم قبول الاعتراض', isError: false);
-      await AdminNavigation.openAddDamage(context, resolvedCaseId);
+      //await AdminNavigation.openAddDamage(context, resolvedCaseId);
     } catch (error) {
       if (!mounted) return;
       _showMessage(
@@ -687,7 +687,7 @@ class _AdminClaimDetailsScreenState extends State<AdminClaimDetailsScreen> {
               final resolvedCaseId = resolvedDoc.id;
 
               return SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(18, 14, 18, bottomPad + 24),
+                padding: EdgeInsets.fromLTRB(18, 14, 18, bottomPad + 120),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [

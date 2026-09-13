@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../home/admin_home_screen.dart';
 
+import '../reviews/admin_case_review_screen.dart';
+import '../reviews/admin_claim_details_screen.dart';
+
 class AdminBottomNav extends StatefulWidget {
   const AdminBottomNav({super.key});
 
@@ -32,8 +35,14 @@ class _AdminBottomNavState extends State<AdminBottomNav> {
   Widget build(BuildContext context) {
     final pages = [
       const AdminHomeScreen(),
-      const _AdminPlaceholderPage(title: 'الحالات'),
-      const _AdminPlaceholderPage(title: 'الاعتراضات'),
+      //const _AdminPlaceholderPage(title: 'الحالات'),
+      const AdminCaseReviewScreen(
+    caseId: 'IsrlHOGmYQ7HOjnjZ4Jk',
+  ),
+      //const _AdminPlaceholderPage(title: 'الاعتراضات'),
+      const AdminClaimDetailsScreen(
+    objectionId: 'S0C7Ou8aeXDs6OAXEXtp',
+  ),
     ];
 
     return Scaffold(

@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'edit_single_damage_screen.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'add_damage_screen.dart';
 
 class EditDamagesScreen extends StatelessWidget {
   final String caseId;
@@ -19,6 +22,8 @@ class EditDamagesScreen extends StatelessWidget {
   static const Color primaryBlue = Color(0xFF173F7A);
   static const Color borderColor = Color(0xFFD7E0EC);
   static const Color textDark = Color(0xFF142A4A);
+
+  static const String backendUrl = 'http://192.168.0.239:8000';
 
   static const Map<String, String> damageLabels = {
     'dent': 'انبعاج',
@@ -76,10 +81,7 @@ class EditDamagesScreen extends StatelessWidget {
           ),
           leading: IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: textDark,
-            ),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: textDark),
           ),
         ),
         body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -92,9 +94,7 @@ class EditDamagesScreen extends StatelessWidget {
             }
 
             if (snapshot.hasError) {
-              return const Center(
-                child: Text('تعذر تحميل الأضرار.'),
-              );
+              return const Center(child: Text('تعذر تحميل الأضرار.'));
             }
 
             final docs = snapshot.data?.docs ?? [];
@@ -150,8 +150,19 @@ class EditDamagesScreen extends StatelessWidget {
                   SizedBox(
                     height: 54,
                     child: OutlinedButton.icon(
+                      //open AddDamageScreen with this image preselected.
                       onPressed: () {
-                        // Later: open AddDamageScreen with this image preselected.
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AddDamageScreen(
+                              caseId: caseId,
+                              imageId: imageId,
+                              imageUrl: imageUrl,
+                              imageNumber: imageNumber,
+                            ),
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.add_rounded),
                       label: const Text(
@@ -163,9 +174,7 @@ class EditDamagesScreen extends StatelessWidget {
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: primaryBlue,
-                        side: const BorderSide(
-                          color: Color(0xFF2563EB),
-                        ),
+                        side: const BorderSide(color: Color(0xFF2563EB)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -264,10 +273,7 @@ class EditDamagesScreen extends StatelessWidget {
 
                     const Text(
                       'إجمالي تكلفة الصورة',
-                      style: TextStyle(
-                        color: Color(0xFF8997AA),
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: Color(0xFF8997AA), fontSize: 13),
                     ),
 
                     const SizedBox(height: 3),
@@ -342,35 +348,32 @@ class EditDamagesScreen extends StatelessWidget {
               IconButton(
                 tooltip: 'تعديل الضرر',
                 onPressed: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => EditSingleDamageScreen(
-        caseId: caseId,
-        imageId: imageId,
-        itemId: itemId,
-        imageUrl: imageUrl,
-        imageNumber: imageNumber,
-        damageType: damageType,
-        part: part,
-        severity: severity ?? 'moderate',
-        lineCostSar: lineCost is num
-            ? lineCost.toDouble()
-            : null,
-      ),
-    ),
-  );
-},
-                icon: const Icon(
-                  Icons.edit_outlined,
-                  color: Color(0xFF2563EB),
-                ),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditSingleDamageScreen(
+                        caseId: caseId,
+                        imageId: imageId,
+                        itemId: itemId,
+                        imageUrl: imageUrl,
+                        imageNumber: imageNumber,
+                        damageType: damageType,
+                        part: part,
+                        severity: severity ?? 'moderate',
+                        lineCostSar: lineCost is num
+                            ? lineCost.toDouble()
+                            : null,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.edit_outlined, color: Color(0xFF2563EB)),
               ),
 
               IconButton(
                 tooltip: 'حذف الضرر',
                 onPressed: () {
-                  // Later: show delete confirmation.
+                  _showDeleteConfirmation(context, itemId: itemId);
                 },
                 icon: const Icon(
                   Icons.delete_outline_rounded,
@@ -397,10 +400,7 @@ class EditDamagesScreen extends StatelessWidget {
           Text(
             damageLabel,
             textAlign: TextAlign.right,
-            style: const TextStyle(
-              color: Color(0xFF68758A),
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Color(0xFF68758A), fontSize: 14),
           ),
 
           const SizedBox(height: 15),
@@ -413,18 +413,13 @@ class EditDamagesScreen extends StatelessWidget {
             children: [
               const Text(
                 'التكلفة',
-                style: TextStyle(
-                  color: Color(0xFF8997AA),
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: Color(0xFF8997AA), fontSize: 13),
               ),
 
               const Spacer(),
 
               Text(
-                lineCost is num
-                    ? '${lineCost.toStringAsFixed(2)} ريال'
-                    : '-',
+                lineCost is num ? '${lineCost.toStringAsFixed(2)} ريال' : '-',
                 style: const TextStyle(
                   color: textDark,
                   fontSize: 15,
@@ -440,10 +435,7 @@ class EditDamagesScreen extends StatelessWidget {
 
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 40,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -451,21 +443,182 @@ class EditDamagesScreen extends StatelessWidget {
       ),
       child: const Column(
         children: [
-          Icon(
-            Icons.description_outlined,
-            size: 42,
-            color: Color(0xFF9CACBF),
-          ),
+          Icon(Icons.description_outlined, size: 42, color: Color(0xFF9CACBF)),
           SizedBox(height: 12),
           Text(
             'لا توجد أضرار في هذه الصورة.',
-            style: TextStyle(
-              color: Color(0xFF68758A),
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Color(0xFF68758A), fontSize: 14),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _showDeleteConfirmation(
+    BuildContext context, {
+    required String itemId,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+            ),
+            contentPadding: const EdgeInsets.fromLTRB(26, 26, 26, 24),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 84,
+                  height: 84,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFD6D6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.delete_forever_outlined,
+                    color: Color(0xFFFF2E2E),
+                    size: 44,
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                const Text(
+                  'حذف الضرر',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: textDark,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                const Text(
+                  'هل أنت متأكد من حذف هذا الضرر؟',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF5F718A),
+                    fontSize: 15,
+                    height: 1.6,
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext, true);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF2E2E),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'حذف',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext, false);
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: const Color(0xFFF2F4F7),
+                      foregroundColor: textDark,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'إلغاء',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed == true && context.mounted) {
+      await _deleteDamage(context, itemId);
+    }
+  }
+
+  Future<void> _deleteDamage(BuildContext context, String itemId) async {
+    try {
+      final uri = Uri.parse(
+        '$backendUrl/damage/admin/cases/'
+        '$caseId/images/'
+        '$imageId/cost-items/'
+        '$itemId',
+      );
+
+      final response = await http.delete(uri);
+
+      if (!context.mounted) return;
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم حذف الضرر بنجاح', textAlign: TextAlign.right),
+          ),
+        );
+
+        return;
+      }
+
+      String message = 'تعذر حذف الضرر.';
+
+      try {
+        final body = jsonDecode(response.body);
+
+        if (body is Map && body['detail'] != null) {
+          message = body['detail'].toString();
+        }
+      } catch (_) {}
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message, textAlign: TextAlign.right)),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('حدث خطأ أثناء حذف الضرر.', textAlign: TextAlign.right),
+        ),
+      );
+    }
   }
 }

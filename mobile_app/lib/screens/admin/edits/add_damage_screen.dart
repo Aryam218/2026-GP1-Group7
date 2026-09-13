@@ -6,8 +6,17 @@ import 'package:http/http.dart' as http;
 
 class AddDamageScreen extends StatefulWidget {
   final String caseId;
+  final String imageId;
+  final String imageUrl;
+  final int imageNumber;
 
-  const AddDamageScreen({super.key, required this.caseId});
+  const AddDamageScreen({
+    super.key,
+    required this.caseId,
+    required this.imageId,
+    required this.imageUrl,
+    required this.imageNumber,
+  });
 
   @override
   State<AddDamageScreen> createState() => _AddDamageScreenState();
@@ -21,15 +30,11 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
   static const String backendUrl = 'http://192.168.0.239:8000';
 
   // Controls the current step:
-  // 0 = image selection, 1 = damage details, 2 = review.
+  // 0 = damage details
+  // 1 = review
   int _currentStep = 0;
 
-  bool _isLoadingImages = true;
   bool _isSubmitting = false;
-
-  List<CaseImage> _images = [];
-
-  CaseImage? _selectedImage;
 
   String? _selectedDamageType;
   String? _selectedPart;
@@ -50,128 +55,44 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
   ];
 
   final List<DropdownOption> _parts = const [
-  DropdownOption(
-    value: 'front_bumper',
-    label: 'الصدام الأمامي',
-    englishLabel: 'Front Bumper',
-  ),
-  DropdownOption(
-    value: 'back_bumper',
-    label: 'الصدام الخلفي',
-    englishLabel: 'Back Bumper',
-  ),
-  DropdownOption(
-    value: 'door',
-    label: 'الباب',
-    englishLabel: 'Door',
-  ),
-  DropdownOption(
-    value: 'fender',
-    label: 'الرفرف',
-    englishLabel: 'Fender',
-  ),
-  DropdownOption(
-    value: 'hood',
-    label: 'غطاء المحرك',
-    englishLabel: 'Hood',
-  ),
-  DropdownOption(
-    value: 'trunk',
-    label: 'الصندوق الخلفي',
-    englishLabel: 'Trunk',
-  ),
-  DropdownOption(
-    value: 'roof',
-    label: 'السقف',
-    englishLabel: 'Roof',
-  ),
-  DropdownOption(
-    value: 'sill',
-    label: 'العتبة الجانبية',
-    englishLabel: 'Sill',
-  ),
-  DropdownOption(
-    value: 'windshield',
-    label: 'الزجاج',
-    englishLabel: 'Windshield',
-  ),
-  DropdownOption(
-    value: 'lamp',
-    label: 'المصباح',
-    englishLabel: 'Lamp',
-  ),
-  DropdownOption(
-    value: 'wheel',
-    label: 'الإطار',
-    englishLabel: 'Wheel',
-  ),
-];
+    DropdownOption(
+      value: 'front_bumper',
+      label: 'الصدام الأمامي',
+      englishLabel: 'Front Bumper',
+    ),
+    DropdownOption(
+      value: 'back_bumper',
+      label: 'الصدام الخلفي',
+      englishLabel: 'Back Bumper',
+    ),
+    DropdownOption(value: 'door', label: 'الباب', englishLabel: 'Door'),
+    DropdownOption(value: 'fender', label: 'الرفرف', englishLabel: 'Fender'),
+    DropdownOption(value: 'hood', label: 'غطاء المحرك', englishLabel: 'Hood'),
+    DropdownOption(
+      value: 'trunk',
+      label: 'الصندوق الخلفي',
+      englishLabel: 'Trunk',
+    ),
+    DropdownOption(value: 'roof', label: 'السقف', englishLabel: 'Roof'),
+    DropdownOption(
+      value: 'sill',
+      label: 'العتبة الجانبية',
+      englishLabel: 'Sill',
+    ),
+    DropdownOption(
+      value: 'windshield',
+      label: 'الزجاج',
+      englishLabel: 'Windshield',
+    ),
+    DropdownOption(value: 'lamp', label: 'المصباح', englishLabel: 'Lamp'),
+    DropdownOption(value: 'wheel', label: 'الإطار', englishLabel: 'Wheel'),
+  ];
 
   final List<DropdownOption> _severities = const [
     DropdownOption(value: 'minor', label: 'خفيف', englishLabel: 'Minor'),
     DropdownOption(value: 'moderate', label: 'متوسط', englishLabel: 'Moderate'),
     DropdownOption(value: 'severe', label: 'شديد', englishLabel: 'Severe'),
   ];
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Load all images that belong to this accident case.
-    _loadCaseImages();
-  }
-
-  Future<void> _loadCaseImages() async {
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('accidentCase')
-          .doc(widget.caseId)
-          .collection('images')
-          .get();
-
-      // Convert Firestore image documents into local CaseImage objects.
-      final images = snapshot.docs
-          .map((doc) {
-            final data = doc.data();
-
-            return CaseImage(
-              id: doc.id,
-              downloadUrl: data['downloadUrl']?.toString() ?? '',
-              label: data['label']?.toString() ?? '',
-            );
-          })
-          .where((image) {
-            return image.downloadUrl.isNotEmpty;
-          })
-          .toList();
-
-      if (!mounted) return;
-
-      setState(() {
-        _images = images;
-        _isLoadingImages = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoadingImages = false;
-      });
-
-      _showErrorDialog('تعذر تحميل صور الحالة. يرجى المحاولة مرة أخرى.');
-    }
-  }
-
-  void _goToDetails() {
-    if (_selectedImage == null) {
-      _showMessage('يرجى اختيار صورة أولاً.');
-      return;
-    }
-
-    setState(() {
-      _currentStep = 1;
-    });
-  }
 
   void _goToReview() {
     // Prevent moving to review before completing all required fields.
@@ -183,7 +104,7 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
     }
 
     setState(() {
-      _currentStep = 2;
+      _currentStep = 1;
     });
   }
 
@@ -194,13 +115,12 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
     }
 
     setState(() {
-      _currentStep--;
+      _currentStep = 0;
     });
   }
 
   Future<void> _submitDamage() async {
-    if (_selectedImage == null ||
-        _selectedDamageType == null ||
+    if (_selectedDamageType == null ||
         _selectedPart == null ||
         _selectedSeverity == null) {
       return;
@@ -221,7 +141,7 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'imageId': _selectedImage!.id,
+          'imageId': widget.imageId,
           'damageType': _selectedDamageType,
           'part': _selectedPart,
           'severity': _selectedSeverity,
@@ -266,7 +186,6 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
     // Reset all selections so the admin can add another damage.
     setState(() {
       _currentStep = 0;
-      _selectedImage = null;
       _selectedDamageType = null;
       _selectedPart = null;
       _selectedSeverity = null;
@@ -312,7 +231,7 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'تمت إضافة الضرر إلى الصورة ${_imageNumber(_selectedImage!)} وسيتم تحديث التكلفة تلقائيًا.',
+                  'تمت إضافة الضرر إلى الصورة ${widget.imageNumber} وسيتم تحديث التكلفة تلقائيًا.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     height: 1.7,
@@ -346,12 +265,15 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
                   height: 50,
                   child: OutlinedButton(
                     onPressed: () {
+                      // Close the success dialog.
                       Navigator.pop(dialogContext);
-
-                      // Return true so the previous screen can refresh its data.
+                      // Close AddDamageScreen.
+                      Navigator.pop(context, true);
+                      // Close EditDamagesScreen and return to Case Details.
                       Navigator.pop(context, true);
                     },
                     style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
                       foregroundColor: primaryBlue,
                       side: const BorderSide(color: borderColor),
                       shape: RoundedRectangleBorder(
@@ -410,12 +332,6 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
     );
   }
 
-  String _imageNumber(CaseImage image) {
-    final index = _images.indexWhere((item) => item.id == image.id);
-
-    return '${index + 1}';
-  }
-
   DropdownOption? _findOption(List<DropdownOption> options, String? value) {
     if (value == null) return null;
 
@@ -438,20 +354,23 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
           backgroundColor: Colors.white,
           elevation: 0,
           centerTitle: true,
+          automaticallyImplyLeading: false,
+          leading: _currentStep == 1
+              ? IconButton(
+                  onPressed: _goBack,
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Color(0xFF142A4A),
+                    size: 21,
+                  ),
+                )
+              : null,
           title: const Text(
             'إضافة ضرر',
             style: TextStyle(
               color: Color(0xFF142A4A),
               fontWeight: FontWeight.bold,
               fontSize: 19,
-            ),
-          ),
-          leading: IconButton(
-            onPressed: _goBack,
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFF142A4A),
-              size: 21,
             ),
           ),
         ),
@@ -475,12 +394,9 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
   Widget _buildCurrentStep() {
     switch (_currentStep) {
       case 0:
-        return _buildImageSelectionStep();
-
-      case 1:
         return _buildDamageDetailsStep();
 
-      case 2:
+      case 1:
         return _buildReviewStep();
 
       default:
@@ -493,11 +409,9 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
       child: Row(
         children: [
-          _buildStep(index: 0, label: 'اختيار الصورة'),
+          _buildStep(index: 0, label: 'تفاصيل الضرر'),
           _buildStepLine(0),
-          _buildStep(index: 1, label: 'تفاصيل الضرر'),
-          _buildStepLine(1),
-          _buildStep(index: 2, label: 'مراجعة'),
+          _buildStep(index: 1, label: 'مراجعة'),
         ],
       ),
     );
@@ -563,169 +477,6 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
         height: 2,
         margin: const EdgeInsets.only(bottom: 28),
         color: completed ? primaryBlue : const Color(0xFFD7E0EC),
-      ),
-    );
-  }
-
-  Widget _buildImageSelectionStep() {
-    return Padding(
-      key: const ValueKey('imageStep'),
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'في أي صورة يظهر الضرر الذي تريد إضافته؟',
-            style: TextStyle(
-              fontSize: 20,
-              height: 1.5,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF142A4A),
-            ),
-          ),
-          const SizedBox(height: 7),
-          const Text(
-            'اختر الصورة التي يظهر فيها الضرر بشكل أوضح.',
-            style: TextStyle(fontSize: 14, color: Color(0xFF738096)),
-          ),
-          const SizedBox(height: 24),
-
-          Expanded(child: _buildImagesGrid()),
-
-          _primaryButton(text: 'التالي', onPressed: _goToDetails),
-
-          const SizedBox(height: 18),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImagesGrid() {
-    if (_isLoadingImages) {
-      return const Center(child: CircularProgressIndicator(color: primaryBlue));
-    }
-
-    if (_images.isEmpty) {
-      return const Center(
-        child: Text(
-          'لا توجد صور لهذه الحالة.',
-          style: TextStyle(color: Color(0xFF738096)),
-        ),
-      );
-    }
-
-    return GridView.builder(
-      padding: EdgeInsets.zero,
-      itemCount: _images.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 18,
-        childAspectRatio: 0.95,
-      ),
-      itemBuilder: (context, index) {
-        final image = _images[index];
-
-        return _buildImageItem(image: image, number: index + 1);
-      },
-    );
-  }
-
-  Widget _buildImageItem({required CaseImage image, required int number}) {
-    final bool selected = _selectedImage?.id == image.id;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () {
-        // Save the image selected by the admin.
-        setState(() {
-          _selectedImage = image;
-        });
-      },
-      child: Column(
-        children: [
-          Expanded(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Center allows the image container to take only the
-                // actual displayed image size instead of the full grid width.
-                Center(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(13),
-                      border: Border.all(
-                        color: selected ? const Color(0xFF2563EB) : borderColor,
-                        width: selected ? 3 : 1,
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(selected ? 10 : 12),
-                      child: Image.network(
-                        image.downloadUrl,
-
-                        // Keep the complete image visible without cropping.
-                        fit: BoxFit.contain,
-
-                        errorBuilder: (context, error, stackTrace) {
-                          return const ColoredBox(
-                            color: Color(0xFFF2F4F8),
-                            child: Center(
-                              child: Icon(
-                                Icons.broken_image_outlined,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Selection icon stays on the top-left side of the grid item.
-                if (selected)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      width: 27,
-                      height: 27,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color(0xFF2563EB),
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                size: 20,
-                color: selected
-                    ? const Color(0xFF2563EB)
-                    : const Color(0xFF9CACBF),
-              ),
-              const SizedBox(width: 5),
-              Text(
-                'الصورة $number',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF2C3D57)),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -813,12 +564,17 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
           Row(
             children: [
               Expanded(
-                child: _secondaryButton(text: 'السابق', onPressed: _goBack),
+                flex: 2,
+                child: _primaryButton(text: 'التالي', onPressed: _goToReview),
               ),
               const SizedBox(width: 12),
               Expanded(
-                flex: 2,
-                child: _primaryButton(text: 'التالي', onPressed: _goToReview),
+                child: _secondaryButton(
+                  text: 'إلغاء',
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                ),
               ),
             ],
           ),
@@ -828,10 +584,6 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
   }
 
   Widget _buildSelectedImageCard() {
-    if (_selectedImage == null) {
-      return const SizedBox.shrink();
-    }
-
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -853,7 +605,7 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(9),
               child: Image.network(
-                _selectedImage!.downloadUrl,
+                widget.imageUrl,
                 width: 85,
                 height: 120,
 
@@ -887,7 +639,7 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
                 const SizedBox(height: 4),
 
                 Text(
-                  'الصورة ${_imageNumber(_selectedImage!)}',
+                  'الصورة ${widget.imageNumber}',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -896,23 +648,6 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
                 ),
 
                 const SizedBox(height: 7),
-
-                InkWell(
-                  onTap: () {
-                    // Return to image selection without clearing damage details.
-                    setState(() {
-                      _currentStep = 0;
-                    });
-                  },
-                  child: const Text(
-                    'تغيير الصورة',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF2563EB),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -1061,18 +796,36 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
             ),
             child: Column(
               children: [
-                if (_selectedImage != null)
-                  ClipRRect(
+                Container(
+                  width: double.infinity,
+                  height: 220,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF8FAFD),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(13),
+                    ),
+                  ),
+                  child: ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(13),
                     ),
                     child: Image.network(
-                      _selectedImage!.downloadUrl,
+                      widget.imageUrl,
                       width: double.infinity,
-                      height: 180,
-                      fit: BoxFit.cover,
+                      height: 220,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            size: 42,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
                     ),
                   ),
+                ),
 
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -1080,7 +833,7 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
                     children: [
                       _reviewRow(
                         'الصورة المحددة',
-                        'الصورة ${_imageNumber(_selectedImage!)}',
+                        'الصورة ${widget.imageNumber}',
                       ),
                       const Divider(height: 25),
                       _reviewRow(
@@ -1137,18 +890,28 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
           Row(
             children: [
               Expanded(
-                child: _secondaryButton(
-                  text: 'السابق',
-                  onPressed: _isSubmitting ? null : _goBack,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
                 flex: 2,
                 child: _primaryButton(
                   text: _isSubmitting ? 'جاري الإضافة...' : 'إضافة الضرر',
                   onPressed: _isSubmitting ? null : _submitDamage,
                   loading: _isSubmitting,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _secondaryButton(
+                  text: 'إلغاء',
+                  onPressed: _isSubmitting
+                      ? null
+                      : () {
+                          final navigator = Navigator.of(context);
+
+                          // Close AddDamageScreen.
+                          navigator.pop();
+
+                          // Close EditDamagesScreen and return to case details.
+                          navigator.pop();
+                        },
                 ),
               ),
             ],

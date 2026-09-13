@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import 'admin_navigation.dart';
 import '../widgets/case_assessment_view.dart';
 import '../edits/edit_damages_screen.dart';
+
 /// Admin-facing review screen for one accident case. Read-only assessment
 /// content is delegated to [CaseAssessmentView] (shared with the Claim
 /// Details screen); this screen only adds the edit entry point and the two
@@ -300,12 +300,6 @@ class _AdminCaseReviewScreenState extends State<AdminCaseReviewScreen> {
         backgroundColor: _pageBg,
         elevation: 0,
         automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(Icons.edit_outlined, color: _textDark),
-          tooltip: 'تعديل التقييم',
-          onPressed: () =>
-              AdminNavigation.openAddDamage(context, widget.caseId),
-        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.arrow_forward_ios_rounded, color: _textDark),
@@ -323,30 +317,26 @@ class _AdminCaseReviewScreenState extends State<AdminCaseReviewScreen> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(18, 14, 18, bottomPad + 24),
+        padding: EdgeInsets.fromLTRB(18, 14, 18, bottomPad + 120),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             CaseAssessmentView(
-  caseId: widget.caseId,
-  onEditImage: (
-    imageId,
-    imageUrl,
-    imageNumber,
-  ) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => EditDamagesScreen(
-          caseId: widget.caseId,
-          imageId: imageId,
-          imageUrl: imageUrl,
-          imageNumber: imageNumber,
-        ),
-      ),
-    );
-  },
-),
+              caseId: widget.caseId,
+              onEditImage: (imageId, imageUrl, imageNumber) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EditDamagesScreen(
+                      caseId: widget.caseId,
+                      imageId: imageId,
+                      imageUrl: imageUrl,
+                      imageNumber: imageNumber,
+                    ),
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 20),
             Row(
               textDirection: TextDirection.rtl,

@@ -45,7 +45,7 @@ class _EditSingleDamageScreenState extends State<EditSingleDamageScreen> {
   late String _selectedSeverity;
 
   bool _isSaving = false;
-  bool _isDeleting = false;
+  
 
   final Map<String, String> _damageLabels = const {
     'dent': 'انبعاج',
@@ -188,26 +188,32 @@ class _EditSingleDamageScreenState extends State<EditSingleDamageScreen> {
                     Expanded(
                       child: SizedBox(
                         height: 54,
-                        child: OutlinedButton.icon(
-                          onPressed: _showDeleteConfirmation,
-                          icon: const Icon(
-                            Icons.delete_outline_rounded,
-                            color: Colors.red,
-                          ),
-                          label: const Text(
-                            'حذف الضرر',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFFFF6B6B)),
+                        child: ElevatedButton(
+                          onPressed: _isSaving ? null : _saveChanges,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: darkBlue,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'حفظ التعديلات',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -217,18 +223,21 @@ class _EditSingleDamageScreenState extends State<EditSingleDamageScreen> {
                     Expanded(
                       child: SizedBox(
                         height: 54,
-                        child: ElevatedButton(
-                          onPressed: _saveChanges,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryBlue,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
+                        child: OutlinedButton(
+                          onPressed: _isSaving
+                              ? null
+                              : () {
+                                  Navigator.pop(context);
+                                },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: textDark,
+                            side: const BorderSide(color: borderColor),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: const Text(
-                            'حفظ التعديلات',
+                            'إلغاء',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -438,7 +447,7 @@ class _EditSingleDamageScreenState extends State<EditSingleDamageScreen> {
 
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'التكلفة التقديرية',
@@ -551,169 +560,6 @@ class _EditSingleDamageScreenState extends State<EditSingleDamageScreen> {
     );
   }
 
-  Future<void> _showDeleteConfirmation() async {
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFFE8E8),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: Colors.red,
-                    size: 43,
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                const Text(
-                  'حذف الضرر',
-                  style: TextStyle(
-                    color: textDark,
-                    fontSize: 21,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                const Text(
-                  'هل أنت متأكد من حذف هذا الضرر؟\n'
-                  'سيتم تحديث تكلفة الصورة والحالة تلقائيًا.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFF61728B),
-                    fontSize: 14,
-                    height: 1.7,
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(dialogContext);
-                      _deleteDamage();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(11),
-                      ),
-                    ),
-                    child: const Text(
-                      'حذف',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.pop(dialogContext);
-                    },
-                    style: TextButton.styleFrom(
-                      backgroundColor: const Color(0xFFF2F4F7),
-                      foregroundColor: textDark,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(11),
-                      ),
-                    ),
-                    child: const Text(
-                      'إلغاء',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _deleteDamage() async {
-    if (_isDeleting) return;
-
-    setState(() {
-      _isDeleting = true;
-    });
-
-    try {
-      final uri = Uri.parse(
-        '$backendUrl/damage/admin/cases/'
-        '${widget.caseId}/images/'
-        '${widget.imageId}/cost-items/'
-        '${widget.itemId}',
-      );
-
-      final response = await http.delete(uri);
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        if (!mounted) return;
-
-        Navigator.pop(context);
-        return;
-      }
-
-      String message = 'تعذر حذف الضرر.';
-
-      try {
-        final body = jsonDecode(response.body);
-
-        if (body is Map && body['detail'] != null) {
-          message = body['detail'].toString();
-        }
-      } catch (_) {}
-
-      if (!mounted) return;
-
-      _showErrorDialog(message);
-    } catch (e) {
-      if (!mounted) return;
-
-      _showErrorDialog('حدث خطأ أثناء حذف الضرر. يرجى المحاولة مرة أخرى.');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isDeleting = false;
-        });
-      }
-    }
-  }
 
   Future<void> _showSuccessDialog() async {
     await showDialog(
