@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'admin_navigation.dart';
 import '../widgets/case_assessment_view.dart';
-
+import '../edits/edit_damages_screen.dart';
 /// Admin-facing review screen for one accident case. Read-only assessment
 /// content is delegated to [CaseAssessmentView] (shared with the Claim
 /// Details screen); this screen only adds the edit entry point and the two
@@ -327,7 +327,26 @@ class _AdminCaseReviewScreenState extends State<AdminCaseReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            CaseAssessmentView(caseId: widget.caseId),
+            CaseAssessmentView(
+  caseId: widget.caseId,
+  onEditImage: (
+    imageId,
+    imageUrl,
+    imageNumber,
+  ) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditDamagesScreen(
+          caseId: widget.caseId,
+          imageId: imageId,
+          imageUrl: imageUrl,
+          imageNumber: imageNumber,
+        ),
+      ),
+    );
+  },
+),
             const SizedBox(height: 20),
             Row(
               textDirection: TextDirection.rtl,

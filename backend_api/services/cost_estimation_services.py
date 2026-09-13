@@ -787,6 +787,232 @@ async def add_admin_damage(
             "lineCostSar": line_cost,
         },
     }
+    
+async def update_admin_damage(
+    case_id: str,
+    image_id: str,
+    item_id: str,
+    damage_type: str,
+    part: str,
+    severity: str,
+) -> dict:
+    """
+    Update one reviewed damage item and recalculate its cost.
+    """
+    _ensure_firebase_initialized()
+    db = firestore.client()
+
+    case_ref = db.collection("accidentCase").document(case_id)
+    case_snap = case_ref.get()
+
+    if not case_snap.exists:
+        raise CostEstimationAbort("Case not found")
+
+    case = case_snap.to_dict() or {}
+
+    current_status = str(case.get("status") or "").strip()
+
+    # Prevent changes after final review/report issuance.
+    if current_status in LOCKED_STATUSES or case.get("reportId"):
+        raise CostEstimationAbort(
+            "This case can no longer be modified"
+        )
+
+    damage_type = str(damage_type or "").strip().lower()
+    part = str(part or "").strip().lower()
+    severity = str(severity or "").strip().lower()
+
+    if severity not in VALID_SEVERITIES:
+        raise CostEstimationAbort("Invalid severity")
+
+    valid_damage_types = {
+        "dent",
+        "scratch",
+        "crack",
+        "glass",
+        "lamp",
+        "tire",
+    }
+
+    if damage_type not in valid_damage_types:
+        raise CostEstimationAbort("Invalid damage type")
+
+    image_ref = case_ref.collection("images").document(image_id)
+    image_snap = image_ref.get()
+
+    if not image_snap.exists:
+        raise CostEstimationAbort("Image not found")
+
+    item_ref = image_ref.collection("costItems").document(item_id)
+    item_snap = item_ref.get()
+
+    if not item_snap.exists:
+        raise CostEstimationAbort("Damage item not found")
+
+    old_item = item_snap.to_dict() or {}
+
+    # Keep the current wheel position when available.
+    wheel_position = old_item.get("wheelPosition")
+
+    # Get labor hours using the same authoritative lookup table.
+    hours = get_hours(
+        part,
+        damage_type,
+        wheel_position=wheel_position,
+    )
+
+    if hours is None:
+        # fender / sill / roof can use the unmapped-hours table.
+        hours = get_unmapped_hours(part, damage_type)
+
+    if hours is None:
+        raise CostEstimationAbort(
+            "No labor-hours value exists for this part and damage type"
+        )
+
+    # Use the same factors already calculated for this case.
+    factors = case.get("costFactors") or {}
+
+    f_vehicle = float(factors.get("vehicle") or 1.0)
+    f_paint = float(factors.get("paint") or 1.0)
+    rate = float(factors.get("rateSar") or RATE_SAR)
+
+    f_severity = float(get_severity_factor(severity))
+
+    line_cost = round(
+        float(hours)
+        * rate
+        * f_severity
+        * f_vehicle
+        * f_paint,
+        2,
+    )
+
+    update_data = {
+        "damageType": damage_type,
+        "part": part,
+        "lookupKey": part,
+        "severity": severity,
+        "hours": float(hours),
+        "lineCostSar": line_cost,
+        "source": "admin_edited",
+        "adminEdited": True,
+        "adminEditedAt": firestore.SERVER_TIMESTAMP,
+    }
+
+    item_ref.update(update_data)
+
+    totals = _recalculate_admin_totals(
+        case_ref=case_ref,
+        image_ref=image_ref,
+    )
+
+    return {
+        "status": "success",
+        "itemId": item_id,
+        "lineCostSar": line_cost,
+        "imageTotalSar": totals["imageTotalSar"],
+        "caseTotalSar": totals["caseTotalSar"],
+    }
+
+
+async def delete_admin_damage(
+    case_id: str,
+    image_id: str,
+    item_id: str,
+) -> dict:
+    """
+    Delete one reviewed damage item and recalculate image/case totals.
+    """
+    _ensure_firebase_initialized()
+    db = firestore.client()
+
+    case_ref = db.collection("accidentCase").document(case_id)
+    case_snap = case_ref.get()
+
+    if not case_snap.exists:
+        raise CostEstimationAbort("Case not found")
+
+    case = case_snap.to_dict() or {}
+
+    current_status = str(case.get("status") or "").strip()
+
+    if current_status in LOCKED_STATUSES or case.get("reportId"):
+        raise CostEstimationAbort(
+            "This case can no longer be modified"
+        )
+
+    image_ref = case_ref.collection("images").document(image_id)
+
+    if not image_ref.get().exists:
+        raise CostEstimationAbort("Image not found")
+
+    item_ref = image_ref.collection("costItems").document(item_id)
+
+    if not item_ref.get().exists:
+        raise CostEstimationAbort("Damage item not found")
+
+    item_ref.delete()
+
+    totals = _recalculate_admin_totals(
+        case_ref=case_ref,
+        image_ref=image_ref,
+    )
+
+    return {
+        "status": "success",
+        "deletedItemId": item_id,
+        "imageTotalSar": totals["imageTotalSar"],
+        "caseTotalSar": totals["caseTotalSar"],
+    }
+
+
+def _recalculate_admin_totals(case_ref, image_ref) -> dict:
+    """
+    Recalculate the selected image total and then the complete case total.
+    Existing costItems remain the source of truth.
+    """
+
+    image_total = 0.0
+
+    for item_doc in image_ref.collection("costItems").stream():
+        item = item_doc.to_dict() or {}
+        cost = item.get("lineCostSar")
+
+        if isinstance(cost, (int, float)):
+            image_total += float(cost)
+
+    image_total = round(image_total, 2)
+
+    image_ref.update({
+        "estimatedLaborCostSar": image_total,
+    })
+
+    case_total = 0.0
+
+    for image_doc in case_ref.collection("images").stream():
+        image_data = image_doc.to_dict() or {}
+
+        if image_doc.id == image_ref.id:
+            image_cost = image_total
+        else:
+            image_cost = image_data.get("estimatedLaborCostSar")
+
+        if isinstance(image_cost, (int, float)):
+            case_total += float(image_cost)
+
+    case_total = round(case_total, 2)
+
+    case_ref.update({
+        "estimatedCostSar": case_total,
+        "adminModified": True,
+        "adminModifiedAt": firestore.SERVER_TIMESTAMP,
+    })
+
+    return {
+        "imageTotalSar": image_total,
+        "caseTotalSar": case_total,
+    }
 
 async def process_cost_estimation(case_id: str) -> dict:
     cost_run_id = None

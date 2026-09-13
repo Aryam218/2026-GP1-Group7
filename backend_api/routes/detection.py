@@ -1,10 +1,13 @@
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from firebase_admin import firestore
 from services.damage_detection import process_damage_detection
 from pydantic import BaseModel
 from services.cost_estimation_services import (
     process_cost_estimation,
     add_admin_damage,
+    update_admin_damage,
+    delete_admin_damage,
+    CostEstimationAbort,
 )
 router = APIRouter()
 
@@ -30,7 +33,54 @@ async def create_admin_damage(
         part=request.part,
         severity=request.severity,
     )
+class AdminDamageUpdateRequest(BaseModel):
+    damageType: str
+    part: str
+    severity: str
 
+@router.patch(
+    "/admin/cases/{case_id}/images/{image_id}/cost-items/{item_id}"
+)
+async def edit_admin_damage(
+    case_id: str,
+    image_id: str,
+    item_id: str,
+    request: AdminDamageUpdateRequest,
+):
+    try:
+        return await update_admin_damage(
+            case_id=case_id,
+            image_id=image_id,
+            item_id=item_id,
+            damage_type=request.damageType,
+            part=request.part,
+            severity=request.severity,
+        )
+    except CostEstimationAbort as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
+
+@router.delete(
+    "/admin/cases/{case_id}/images/{image_id}/cost-items/{item_id}"
+)
+async def remove_admin_damage(
+    case_id: str,
+    image_id: str,
+    item_id: str,
+):
+    try:
+        return await delete_admin_damage(
+            case_id=case_id,
+            image_id=image_id,
+            item_id=item_id,
+        )
+    except CostEstimationAbort as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
 
 @router.post("/cost/{case_id}")
 async def cost(case_id: str):

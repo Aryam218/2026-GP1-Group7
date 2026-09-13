@@ -24,7 +24,11 @@ import '../../submit_case/photo_preview_screen.dart';
 class CaseAssessmentView extends StatelessWidget {
   final String caseId;
 
-  const CaseAssessmentView({super.key, required this.caseId});
+  // Optional callback used by the admin review screen.
+  final void Function(String imageId, String imageUrl, int imageNumber)?
+  onEditImage;
+
+  const CaseAssessmentView({super.key, required this.caseId, this.onEditImage});
 
   // ── Colors (copied from Case_Details_Screen.dart) ────────────────────────
   static const Color _pageBg = Color(0xFFF7FAFF);
@@ -378,15 +382,24 @@ class CaseAssessmentView extends StatelessWidget {
           title: 'نتائج تحليل الأضرار',
           children: [
             _overallSeverityBox(caseData['overallSeverity'] as String?),
-            ...images.map((doc) => _imageBlock(context, doc)),
+            ...images.asMap().entries.map(
+              (entry) => _imageBlock(context, entry.value, entry.key + 1),
+            ),
           ],
         );
       },
     );
   }
 
-  Widget _imageBlock(BuildContext context, QueryDocumentSnapshot imageDoc) {
+  Widget _imageBlock(
+    BuildContext context,
+    QueryDocumentSnapshot imageDoc,
+    int imageNumber,
+  ) {
     final item = imageDoc.data() as Map<String, dynamic>;
+    final String imageId = imageDoc.id;
+
+    final String originalImageUrl = item['downloadUrl']?.toString() ?? '';
     final bool hasDamage = item['hasDamage'] ?? false;
     final String? severity = item['severity'] as String?;
     final dynamic severityConfidence = item['severityConfidence'];
@@ -457,6 +470,29 @@ class CaseAssessmentView extends StatelessWidget {
                     Row(
                       textDirection: TextDirection.rtl,
                       children: [
+                        // Show edit button only when this screen allows editing.
+                        if (onEditImage != null && hasDamage)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: IconButton(
+                              tooltip: 'تعديل أضرار الصورة',
+                              onPressed: () {
+                                onEditImage!(
+                                  imageId,
+                                  originalImageUrl.isNotEmpty
+                                      ? originalImageUrl
+                                      : url,
+                                  imageNumber,
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.edit_outlined,
+                                color: Color(0xFF1E3A6E),
+                                size: 22,
+                              ),
+                            ),
+                          ),
+
                         Text(
                           hasDamage ? 'ضرر مكتشف' : 'سليمة',
                           style: TextStyle(
