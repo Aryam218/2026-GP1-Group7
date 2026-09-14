@@ -27,7 +27,7 @@ class _AddDamageScreenState extends State<AddDamageScreen> {
   static const Color borderColor = Color(0xFFD7E0EC);
 
   // Backend base URL used to submit the admin-added damage.
-  static const String backendUrl = 'http://192.168.0.239:8000';
+  static const String backendUrl = 'http://192.168.0.2:8000';
 
   // Controls the current step:
   // 0 = damage details

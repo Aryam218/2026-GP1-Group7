@@ -467,50 +467,49 @@ class CaseAssessmentView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Row(
-  textDirection: TextDirection.rtl,
-  children: [
-    Row(
-      mainAxisSize: MainAxisSize.min,
-      textDirection: TextDirection.rtl,
-      children: [
-        Text(
-          hasDamage ? 'ضرر مكتشف' : 'سليمة',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: hasDamage ? Colors.red : Colors.green,
-          ),
-        ),
-        const SizedBox(width: 8),
-        _severityChip(severity),
-      ],
-    ),
-
-    const Spacer(),
-
-    if (onEditImage != null && hasDamage)
-      IconButton(
-        tooltip: 'تعديل أضرار الصورة',
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-        onPressed: () {
-          onEditImage!(
-            imageId,
-            originalImageUrl.isNotEmpty
-                ? originalImageUrl
-                : url,
-            imageNumber,
-          );
-        },
-        icon: const Icon(
-          Icons.edit_outlined,
-          color: Color(0xFF1E3A6E),
-          size: 22,
-        ),
-      ),
-  ],
-),
+                    Wrap(
+                      alignment: WrapAlignment.end,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Text(
+                          hasDamage ? 'ضرر مكتشف' : 'سليمة',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: hasDamage ? Colors.red : Colors.green,
+                          ),
+                        ),
+                        _severityChip(severity),
+                        if (onEditImage != null && hasDamage)
+                          SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: IconButton(
+                              tooltip: 'تعديل أضرار الصورة',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {
+                                onEditImage!(
+                                  imageId,
+                                  originalImageUrl.isNotEmpty
+                                      ? originalImageUrl
+                                      : url,
+                                  imageNumber,
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.edit_outlined,
+                                color: Color(0xFF1E3A6E),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                     if (severityConfidence is num) ...[
                       const SizedBox(height: 4),
                       Text(
@@ -791,11 +790,10 @@ class CaseAssessmentView extends StatelessWidget {
           ...deductions.map((d) {
             final m = d as Map<String, dynamic>;
             final reasonAr = m['reason_ar']?.toString() ?? '-';
-            final points = m['points'];
             return Padding(
               padding: const EdgeInsets.only(bottom: 6),
               child: Text(
-                '− $points: $reasonAr',
+                reasonAr,
                 textDirection: TextDirection.rtl,
                 textAlign: TextAlign.right,
                 style: const TextStyle(

@@ -38,7 +38,7 @@ class _EditSingleDamageScreenState extends State<EditSingleDamageScreen> {
   static const Color borderColor = Color(0xFFD7E0EC);
   static const Color pageBg = Color(0xFFF7FAFF);
 
-  static const String backendUrl = 'http://192.168.0.239:8000';
+  static const String backendUrl = 'http://192.168.0.2:8000';
 
   late String _selectedDamageType;
   late String _selectedPart;
